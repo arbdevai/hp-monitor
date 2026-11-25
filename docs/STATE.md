@@ -1,7 +1,7 @@
 # HP Monitor — Project State & Evolution Log
 
-## Current Status (v1.0.0)
-- **Active Version:** `1.0.0` (`versionCode = 10000`)
+## Current Status (v1.0.1)
+- **Active Version:** `1.0.1` (`versionCode = 10001`)
 - **Git Branch:** `main`
 - **Repo:** `arbdevai/hp-monitor` (public — dibutuhkan in-app update)
 - **minSdk:** 21 (J1 Ace = Android 5.1.1)
@@ -46,6 +46,9 @@
 4. **Compose & Coroutines Import / Typing:**
    - Gejala: `Unresolved reference 'Path'`, `Unresolved reference 'Thermometer'`, `Argument type mismatch (Double vs Float)`, `Unresolved reference 'cancel'`.
    - Solusi: Gunakan `androidx.compose.ui.graphics.Path` (bukan geometry), `Icons.Default.Thermostat` (bukan Thermometer), literal `0.0f`, serta import `kotlinx.coroutines.cancel`.
+5. **NetworkOnMainThreadException in Polling Loop:**
+   - Gejala: Aplikasi tetap berstatus OFFLINE karena networking dijalankan di Main thread via `lifecycleScope.launch`.
+   - Solusi: Selalu bungkus eksekusi `HttpURLConnection` di dalam `withContext(Dispatchers.IO)`.
 
 ## Catatan Keputusan
 - Native dipilih manual JNI (bukan UniFFI): surface area lebih kecil,

@@ -13,10 +13,10 @@ dan piksel hitam OLED murni.
 ## 2. Keputusan PRD (hasil wawancara)
 | Dimensi | Keputusan |
 |---|---|
-| Domain | A — HP utama (target) dimonitor, J1 Ace = display dashboard |
+| Domain | A — Dual-Role (1 APK: Viewer Dashboard / Host Agent Server) |
 | Native Layer | B — Rust (`monitor-core`) via JNI + fallback Kotlin penuh |
-| Persistence | A — SharedPreferences (alamat server) |
-| UI Theme | Hitam pekat `#000000` (true OLED), skala netral R=G=B |
+| Persistence | A — SharedPreferences (alamat server & compact mode) |
+| UI Theme | Hitam pekat `#000000` (true OLED), skala netral R=G=B, Compact HUD mode |
 | Repo | `arbdevai/hp-monitor`, **public** (agar in-app update dari GitHub Release bekerja tanpa autentikasi) |
 
 ## 3. Arsitektur

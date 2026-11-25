@@ -28,29 +28,30 @@ fun MetricCard(
     title: String,
     icon: ImageVector,
     modifier: Modifier = Modifier.fillMaxWidth(),
+    compact: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(if (compact) 8.dp else 12.dp),
         colors = CardDefaults.cardColors(containerColor = MonitorSurface),
         modifier = modifier,
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(if (compact) 8.dp else 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = TextSecondary,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(if (compact) 15.dp else 18.dp),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(6.dp))
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
                     color = TextSecondary,
                 )
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(if (compact) 6.dp else 12.dp))
             content()
         }
     }

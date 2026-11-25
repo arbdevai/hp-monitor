@@ -25,6 +25,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -106,6 +108,43 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Simpan")
+            }
+
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                "TAMPILAN",
+                style = MaterialTheme.typography.labelMedium,
+                color = TextSecondary,
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Tampilan Ringkas (Compact)",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextPrimary,
+                    )
+                    Text(
+                        "Optimasi kepadatan informasi untuk layar kecil & lanskap",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
+                }
+                Switch(
+                    checked = state.compactMode,
+                    onCheckedChange = { vm.toggleCompactMode() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MonitorAccent,
+                        checkedTrackColor = MonitorAccent.copy(alpha = 0.3f),
+                    ),
+                )
             }
 
             Spacer(Modifier.height(24.dp))

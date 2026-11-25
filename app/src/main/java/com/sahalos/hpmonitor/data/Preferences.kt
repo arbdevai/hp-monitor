@@ -13,9 +13,16 @@ class Preferences(context: Context) {
             prefs.edit().putString(KEY_URL, value.trim()).apply()
         }
 
+    var compactMode: Boolean
+        get() = prefs.getBoolean(KEY_COMPACT, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_COMPACT, value).apply()
+        }
+
     companion object {
         const val PREFS_NAME = "hp_monitor"
         private const val KEY_URL = "server_url"
+        private const val KEY_COMPACT = "compact_mode"
         const val DEFAULT_URL = "http://192.168.1.2:8787"
     }
 }

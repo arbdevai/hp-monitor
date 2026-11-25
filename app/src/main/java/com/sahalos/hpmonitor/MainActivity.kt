@@ -19,6 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.sahalos.hpmonitor.ui.agent.HostAgentScreen
 import com.sahalos.hpmonitor.ui.dashboard.DashboardScreen
 import com.sahalos.hpmonitor.ui.dashboard.DashboardViewModel
 import com.sahalos.hpmonitor.ui.settings.SettingsScreen
@@ -49,7 +50,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Screen { DASHBOARD, SETTINGS }
+private enum class Screen { DASHBOARD, HOST_AGENT, SETTINGS }
 
 @Composable
 private fun MonitorApp(vm: DashboardViewModel) {
@@ -68,6 +69,10 @@ private fun MonitorApp(vm: DashboardViewModel) {
             Screen.DASHBOARD -> DashboardScreen(
                 vm = vm,
                 onOpenSettings = { screen = Screen.SETTINGS },
+                onOpenHost = { screen = Screen.HOST_AGENT },
+            )
+            Screen.HOST_AGENT -> HostAgentScreen(
+                onBack = { screen = Screen.DASHBOARD },
             )
             Screen.SETTINGS -> SettingsScreen(
                 vm = vm,

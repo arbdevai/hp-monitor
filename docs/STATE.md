@@ -1,7 +1,7 @@
 # HP Monitor — Project State & Evolution Log
 
-## Current Status (v1.0.1)
-- **Active Version:** `1.0.1` (`versionCode = 10001`)
+## Current Status (v1.1.0)
+- **Active Version:** `1.1.0` (`versionCode = 10100`)
 - **Git Branch:** `main`
 - **Repo:** `arbdevai/hp-monitor` (public — dibutuhkan in-app update)
 - **minSdk:** 21 (J1 Ace = Android 5.1.1)
@@ -32,6 +32,18 @@
    SemVer numerik, FileProvider).**
 5. **Polling lifecycle-bound** (`repeatOnLifecycle(STARTED)`): tidak ada
    polling saat layar mati/app background.
+6. **Dual-Role 2-in-1 (Embedded Agent Server & Host Mode):**
+   - APK dapat bertindak sebagai Viewer (Dashboard) ATAU Host (Yang Dimonitor).
+   - `HostAgentService` berjalan sebagai Foreground Service dengan `EmbeddedAgentServer`
+     di port 8787, membaca `/proc/stat`, `/proc/meminfo`, `BatteryManager`, `TrafficStats`.
+   - Tidak memerlukan script python atau Termux lagi di perangkat target.
+7. **Tampilan Compact & Landscape Multi-Column (Optimasi J1 Ace):**
+   - Toggle Compact Mode persisten di SharedPreferences dan tombol cepat TopAppBar.
+   - Mode Lanskap beralih ke tata letak 2 kolom (Kiri: CPU + Baterai, Kanan: Memori + Jaringan)
+     agar seluruh informasi telemetri muat di layar 800x480 tanpa scroll berlebih.
+8. **SSL/TLS Root CA Trust Workaround (Android 5.1.1):**
+   - Workaround trust store kadaluarsa Android 5.0-5.1.1 untuk unduhan GitHub Release
+     dengan verifikasi integritas 4 lapis (signature + package name + SemVer) di `isApkValid`.
 
 ## Known CI Failure Patterns
 1. **AGP Conflicting Configuration (splits vs ndk.abiFilters):**

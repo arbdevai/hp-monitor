@@ -10,7 +10,12 @@ import androidx.core.content.FileProvider
 import com.sahalos.hpmonitor.BuildConfig
 import java.io.File
 import java.io.IOException
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -34,13 +39,35 @@ class UpdateManager(private val context: Context) {
 
     data class DownloadProgress(val fraction: Float, val bytes: Long, val total: Long)
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .followRedirects(true)
-        .followSslRedirects(true)
-        .build()
+    private val client: OkHttpClient = createHttpClient()
+
+    private fun createHttpClient(): OkHttpClient {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true)
+
+        // Android 5.0 - 5.1.1 (API 21-22) lacks modern root CAs (ISRG Root X1 / modern DigiCert).
+        // For in-app updater downloading signed release APKs from GitHub, install a trust-all
+        // SSL socket factory on API <= 22. APK integrity is strictly verified by isApkValid()
+        // using Android's PackageManager DEX and signature parsing.
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) {
+            try {
+                val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
+                    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                })
+                val sslContext = SSLContext.getInstance("TLS")
+                sslContext.init(null, trustAllCerts, SecureRandom())
+                builder.sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+                builder.hostnameVerifier { _, _ -> true }
+            } catch (_: Exception) {}
+        }
+        return builder.build()
+    }
 
     private val updateDir: File
         get() = File(context.cacheDir, "updates").apply { mkdirs() }

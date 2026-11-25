@@ -42,6 +42,7 @@ data class DashboardState(
     val update: UpdateUi = UpdateUi(state = "idle"),
     val updateInfo: UpdateManager.UpdateInfo? = null,
     val currentVersion: String = BuildConfig.VERSION_NAME,
+    val compactMode: Boolean = false,
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -58,6 +59,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         DashboardState(
             serverUrl = preferences.serverUrl,
             currentVersion = BuildConfig.VERSION_NAME,
+            compactMode = preferences.compactMode,
         )
     )
     val state: StateFlow<DashboardState> = _state
@@ -112,6 +114,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val normalized = url.trim().ifEmpty { Preferences.DEFAULT_URL }
         preferences.serverUrl = normalized
         _state.update { it.copy(serverUrl = normalized) }
+    }
+
+    fun toggleCompactMode() {
+        val newMode = !_state.value.compactMode
+        preferences.compactMode = newMode
+        _state.update { it.copy(compactMode = newMode) }
     }
 
     fun checkForUpdate() {

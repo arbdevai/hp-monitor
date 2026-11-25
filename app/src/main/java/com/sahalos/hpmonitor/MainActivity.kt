@@ -10,15 +10,17 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sahalos.hpmonitor.ui.agent.HostAgentScreen
 import com.sahalos.hpmonitor.ui.dashboard.DashboardScreen
 import com.sahalos.hpmonitor.ui.dashboard.DashboardViewModel
@@ -43,6 +45,16 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            val state by vm.state.collectAsStateWithLifecycle()
+            val view = LocalView.current
+
+            DisposableEffect(state.keepScreenOn) {
+                view.keepScreenOn = state.keepScreenOn
+                onDispose {
+                    view.keepScreenOn = false
+                }
+            }
+
             HpMonitorTheme {
                 MonitorApp(vm)
             }

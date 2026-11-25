@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -116,14 +117,74 @@ fun SettingsScreen(
             Spacer(Modifier.height(24.dp))
 
             Text(
-                "TAMPILAN",
+                "TAMPILAN MONITOR",
                 style = MaterialTheme.typography.labelMedium,
                 color = TextSecondary,
             )
             Spacer(Modifier.height(10.dp))
+
+            // Desk HUD Mode
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Mode Desk HUD (Zero-Scroll)",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextPrimary,
+                    )
+                    Text(
+                        "Tampilan HUD telemetry padat tanpa scroll untuk pajangan meja",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
+                }
+                Switch(
+                    checked = state.hudDeskMode,
+                    onCheckedChange = { vm.toggleHudDeskMode() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MonitorAccent,
+                        checkedTrackColor = MonitorAccent.copy(alpha = 0.3f),
+                    ),
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+
+            // Fullscreen / Hide TopAppBar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Sembunyikan App Bar (Layar Penuh)",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextPrimary,
+                    )
+                    Text(
+                        "Mengganti TopAppBar tebal dengan status bar telemetri ringkas",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
+                }
+                Switch(
+                    checked = state.fullscreenMode,
+                    onCheckedChange = { vm.toggleFullscreenMode() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MonitorAccent,
+                        checkedTrackColor = MonitorAccent.copy(alpha = 0.3f),
+                    ),
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+
+            // Compact mode
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(Modifier.weight(1f)) {
@@ -133,7 +194,7 @@ fun SettingsScreen(
                         color = TextPrimary,
                     )
                     Text(
-                        "Optimasi kepadatan informasi untuk layar kecil & lanskap",
+                        "Kepadatan kartu ekstra hemat ruang",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
                     )
@@ -141,6 +202,35 @@ fun SettingsScreen(
                 Switch(
                     checked = state.compactMode,
                     onCheckedChange = { vm.toggleCompactMode() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MonitorAccent,
+                        checkedTrackColor = MonitorAccent.copy(alpha = 0.3f),
+                    ),
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+
+            // Keep Screen On
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Layar Tetap Menyala (Keep Screen On)",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextPrimary,
+                    )
+                    Text(
+                        "Mencegah layar mati saat aplikasi aktif",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
+                }
+                Switch(
+                    checked = state.keepScreenOn,
+                    onCheckedChange = { vm.toggleKeepScreenOn() },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MonitorAccent,
                         checkedTrackColor = MonitorAccent.copy(alpha = 0.3f),
@@ -219,22 +309,23 @@ private fun UpdateSection(vm: DashboardViewModel) {
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Pasang Pembaruan") }
 
+        "error" -> Column {
+            Text(
+                ui.message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Spacer(Modifier.height(6.dp))
+            Button(
+                onClick = { vm.checkForUpdate() },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Coba Lagi") }
+        }
+
         else -> Button(
             onClick = { vm.checkForUpdate() },
+            enabled = !busy,
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.Default.Refresh, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text("Periksa Pembaruan")
-        }
-    }
-
-    if (ui.message.isNotEmpty() && ui.state != "downloading") {
-        Spacer(Modifier.height(8.dp))
-        Text(
-            ui.message,
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-        )
+        ) { Text("Periksa Pembaruan") }
     }
 }

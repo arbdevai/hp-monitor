@@ -43,6 +43,9 @@ data class DashboardState(
     val updateInfo: UpdateManager.UpdateInfo? = null,
     val currentVersion: String = BuildConfig.VERSION_NAME,
     val compactMode: Boolean = false,
+    val hudDeskMode: Boolean = false,
+    val fullscreenMode: Boolean = false,
+    val keepScreenOn: Boolean = true,
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -60,6 +63,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             serverUrl = preferences.serverUrl,
             currentVersion = BuildConfig.VERSION_NAME,
             compactMode = preferences.compactMode,
+            hudDeskMode = preferences.hudDeskMode,
+            fullscreenMode = preferences.fullscreenMode,
+            keepScreenOn = preferences.keepScreenOn,
         )
     )
     val state: StateFlow<DashboardState> = _state
@@ -120,6 +126,24 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val newMode = !_state.value.compactMode
         preferences.compactMode = newMode
         _state.update { it.copy(compactMode = newMode) }
+    }
+
+    fun toggleHudDeskMode() {
+        val newMode = !_state.value.hudDeskMode
+        preferences.hudDeskMode = newMode
+        _state.update { it.copy(hudDeskMode = newMode) }
+    }
+
+    fun toggleFullscreenMode() {
+        val newMode = !_state.value.fullscreenMode
+        preferences.fullscreenMode = newMode
+        _state.update { it.copy(fullscreenMode = newMode) }
+    }
+
+    fun toggleKeepScreenOn() {
+        val newMode = !_state.value.keepScreenOn
+        preferences.keepScreenOn = newMode
+        _state.update { it.copy(keepScreenOn = newMode) }
     }
 
     fun checkForUpdate() {

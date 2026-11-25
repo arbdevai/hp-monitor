@@ -1,7 +1,7 @@
 # HP Monitor — Project State & Evolution Log
 
-## Current Status (v1.1.0)
-- **Active Version:** `1.1.0` (`versionCode = 10100`)
+## Current Status (v1.2.0)
+- **Active Version:** `1.2.0` (`versionCode = 10200`)
 - **Git Branch:** `main`
 - **Repo:** `arbdevai/hp-monitor` (public — dibutuhkan in-app update)
 - **minSdk:** 21 (J1 Ace = Android 5.1.1)
@@ -17,31 +17,24 @@
      tidak pernah abort proses Android.
    - Fallback `KotlinHistory` semantik identik bila `System.loadLibrary`
      gagal (bad ABI). Badge di dashboard menampilkan engine aktif.
-2. **Agent metrik di HP target (di luar APK):**
-   - `monitor-agent/agent.py` di sisi DevBox HP utama, `0.0.0.0:8787`,
-     read-only. Sudah terverifikasi live: CPU per-core, loadavg, RAM/swap,
-     baterai (heuristik unit suhu: raw<150 → °C, selain itu 0.1°C),
-     thermal zone max, rate RX/TX wlan0, top-6 proses (filter artefak `ps`).
-3. **UI Dashboard Compose (dark OLED #000000):**
-   - Kartu CPU (overall + load + bar per-core + sparkline), Memori (RAM +
-     swap + sparkline), Baterai & Termal (suhu chip + tegangan), Jaringan
-     (rate down/up + sparkline), Proses Teratas.
-   - Skeleton shimmer saat first-load (bukan spinner). Banner OFFLINE solid
-     saat server tak terjangkau, data terakhir dipertahankan.
-4. **In-app updater (OkHttp streaming, verifikasi 4 lapis, ABI split,
-   SemVer numerik, FileProvider).**
-5. **Polling lifecycle-bound** (`repeatOnLifecycle(STARTED)`): tidak ada
-   polling saat layar mati/app background.
+2. **Pure OLED Black (#000000) Theme & Surface Tint Elimination:**
+   - Menghilangkan degradasi warna merah/kecokelatan akibat Material 3 `surfaceTint`.
+   - Palet warna OLED pekat (`MonitorBlack = #000000`, `MonitorCard = #080808`, border `#222222`).
+   - Aksen neon cyber cyan (`#00D1FF`) dan green (`#00E676`) berdaya visual tinggi di AMOLED.
+3. **Desk HUD Mode (Zero-Scroll Mode):**
+   - Mode telemetri khusus pajangan meja ("hp nganggur") dengan grid 3-kolom landscape.
+   - 100% informasi CPU, RAM/Swap, Net, Baterai, dan Top Procs muat tanpa scroll vertikal.
+   - Jam digital monospace real-time di header telemetri.
+4. **Collapsible TopAppBar & Fullscreen View:**
+   - Tombol toggle untuk menyembunyikan TopAppBar tebal 56dp menjadi status bar telemetri 28dp,
+     menghemat ruang vertikal secara drastis pada resolusi kecil (800x480).
+5. **Keep Screen On Flag:**
+   - Opsi `keepScreenOn` agar layar HP tidak mati otomatis saat diletakkan di meja sebagai monitor.
 6. **Dual-Role 2-in-1 (Embedded Agent Server & Host Mode):**
    - APK dapat bertindak sebagai Viewer (Dashboard) ATAU Host (Yang Dimonitor).
    - `HostAgentService` berjalan sebagai Foreground Service dengan `EmbeddedAgentServer`
      di port 8787, membaca `/proc/stat`, `/proc/meminfo`, `BatteryManager`, `TrafficStats`.
-   - Tidak memerlukan script python atau Termux lagi di perangkat target.
-7. **Tampilan Compact & Landscape Multi-Column (Optimasi J1 Ace):**
-   - Toggle Compact Mode persisten di SharedPreferences dan tombol cepat TopAppBar.
-   - Mode Lanskap beralih ke tata letak 2 kolom (Kiri: CPU + Baterai, Kanan: Memori + Jaringan)
-     agar seluruh informasi telemetri muat di layar 800x480 tanpa scroll berlebih.
-8. **SSL/TLS Root CA Trust Workaround (Android 5.1.1):**
+7. **SSL/TLS Root CA Trust Workaround (Android 5.1.1):**
    - Workaround trust store kadaluarsa Android 5.0-5.1.1 untuk unduhan GitHub Release
      dengan verifikasi integritas 4 lapis (signature + package name + SemVer) di `isApkValid`.
 

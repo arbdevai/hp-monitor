@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,7 +54,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sahalos.hpmonitor.agent.HostAgentService
 import com.sahalos.hpmonitor.ui.theme.MonitorAccent
 import com.sahalos.hpmonitor.ui.theme.MonitorBlack
-import com.sahalos.hpmonitor.ui.theme.MonitorSurface
+import com.sahalos.hpmonitor.ui.theme.MonitorBorder
+import com.sahalos.hpmonitor.ui.theme.MonitorCard
 import com.sahalos.hpmonitor.ui.theme.StatusCrit
 import com.sahalos.hpmonitor.ui.theme.StatusGood
 import com.sahalos.hpmonitor.ui.theme.TextPrimary
@@ -101,8 +103,9 @@ fun HostAgentScreen(
         ) {
             // Server Switch Card
             Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MonitorSurface),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(containerColor = MonitorCard),
+                border = BorderStroke(1.dp, MonitorBorder),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(Modifier.padding(16.dp)) {
@@ -208,8 +211,9 @@ fun HostAgentScreen(
 
             // Panduan Pemakaian
             Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MonitorSurface),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(containerColor = MonitorCard),
+                border = BorderStroke(1.dp, MonitorBorder),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(Modifier.padding(16.dp)) {

@@ -15,8 +15,8 @@ android {
         // Dependency set in libs.versions.toml is pinned to a minSdk-21 safe release.
         minSdk = 21
         targetSdk = 36
-        versionCode = 10100
-        versionName = "1.1.0"
+        versionCode = 10200
+        versionName = "1.2.0"
     }
 
     sourceSets {

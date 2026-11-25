@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,7 +23,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.Thermometer
+import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -194,7 +195,7 @@ fun DashboardScreen(
                         )
                         if (state.lastUpdated > 0) {
                             Text(
-                                "Data terakhir $fmtClock(state.lastUpdated)",
+                                "Data terakhir ${fmtClock(state.lastUpdated)}",
                                 color = TextSecondary,
                                 style = MaterialTheme.typography.bodySmall,
                             )
@@ -410,7 +411,7 @@ private fun BatteryCard(sn: MetricsSnapshot, spark: FloatArray) {
         if (sn.thermal.max_c != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.Thermometer,
+                    imageVector = Icons.Default.Thermostat,
                     contentDescription = null,
                     tint = TextSecondary,
                     modifier = Modifier.size(16.dp),

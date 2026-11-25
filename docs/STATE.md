@@ -43,6 +43,9 @@
 3. **AndroidViewModel Constructor Contract:**
    - Gejala: `AndroidViewModel(context: Context)` menyebabkan type mismatch dan kegagalan factory ViewModel default.
    - Solusi: Selalu deklarasikan `(application: Application) : AndroidViewModel(application)`.
+4. **Compose & Coroutines Import / Typing:**
+   - Gejala: `Unresolved reference 'Path'`, `Unresolved reference 'Thermometer'`, `Argument type mismatch (Double vs Float)`, `Unresolved reference 'cancel'`.
+   - Solusi: Gunakan `androidx.compose.ui.graphics.Path` (bukan geometry), `Icons.Default.Thermostat` (bukan Thermometer), literal `0.0f`, serta import `kotlinx.coroutines.cancel`.
 
 ## Catatan Keputusan
 - Native dipilih manual JNI (bukan UniFFI): surface area lebih kecil,

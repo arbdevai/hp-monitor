@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.sahalos.hpmonitor.ui.theme.HpMonitorTheme
@@ -64,9 +66,9 @@ fun Modifier.shimmerEffect(): Modifier = composed {
 @Composable
 fun SkeletonBlock(
     modifier: Modifier = Modifier,
-    width: androidx.compose.ui.unit.Dp = 24.dp,
-    height: androidx.compose.ui.unit.Dp = 12.dp,
-    corner: androidx.compose.ui.unit.Dp = 6.dp,
+    width: Dp = 24.dp,
+    height: Dp = 12.dp,
+    corner: Dp = 6.dp,
 ) {
     Box(
         modifier = modifier
@@ -87,7 +89,7 @@ fun SkeletonCard(modifier: Modifier = Modifier, rows: Int = 3) {
         SkeletonBlock(width = 96.dp, height = 14.dp)
         Spacer(Modifier.height(12.dp))
         repeat(rows) {
-            SkeletonBlock(fillMaxWidth(), height = 12.dp)
+            SkeletonBlock(modifier = Modifier.fillMaxWidth(), height = 12.dp)
             if (it < rows - 1) Spacer(Modifier.height(8.dp))
         }
     }

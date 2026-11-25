@@ -48,7 +48,7 @@ class KotlinHistory : MetricsHistory {
         var start = 0
         while (start < n) {
             val end = minOf(start + bucket, n)
-            var sum = 0.0
+            var sum = 0.0f
             var mn = Float.MAX_VALUE
             var mx = Float.MIN_VALUE
             for (i in start until end) {
@@ -69,7 +69,7 @@ class KotlinHistory : MetricsHistory {
         val values = series(metric)
         val n = values.size
         if (n == 0) return FloatArray(5)
-        var sum = 0.0
+        var sum = 0.0f
         var mn = Float.MAX_VALUE
         var mx = Float.MIN_VALUE
         for (v in values) {

@@ -123,7 +123,7 @@ fn f32s_to_le_bytes(v: &[f32]) -> Vec<u8> {
 
 fn to_jbyte_array<'a>(env: &JNIEnv<'a>, bytes: &[u8]) -> JObject<'a> {
     match env.byte_array_from_slice(bytes) {
-        Ok(arr) => arr,
+        Ok(arr) => arr.into(),
         Err(_) => JObject::null(),
     }
 }

@@ -1,0 +1,203 @@
+package com.sahalos.hpmonitor.ui.dashboard
+
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.sahalos.hpmonitor.BuildConfig
+import com.sahalos.hpmonitor.core.Metric
+import com.sahalos.hpmonitor.core.MetricsCoreBridge
+import com.sahalos.hpmonitor.data.MetricsRepository
+import com.sahalos.hpmonitor.data.MetricsSnapshot
+import com.sahalos.hpmonitor.data.Preferences
+import com.sahalos.hpmonitor.data.UpdateManager
+import java.io.File
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+data class UpdateUi(
+    val state: String, // idle | checking | available | downloading | ready | error
+    val progress: Float = 0f,
+    val message: String = "",
+)
+
+data class DashboardState(
+    val snapshot: MetricsSnapshot? = null,
+    val connected: Boolean = false,
+    val lastError: String? = null,
+    val lastUpdated: Long = 0L,
+    val sparks: Map<Int, FloatArray> = emptyMap(),
+    val stats: Map<Int, FloatArray> = emptyMap(),
+    val serverUrl: String = Preferences.DEFAULT_URL,
+    val update: UpdateUi = UpdateUi(state = "idle"),
+    val updateInfo: UpdateManager.UpdateInfo? = null,
+    val currentVersion: String = BuildConfig.VERSION_NAME,
+)
+
+class DashboardViewModel(context: Context) : AndroidViewModel(context) {
+
+    private val repository = MetricsRepository()
+    private val history = MetricsCoreBridge.history
+    private val preferences = Preferences(context.applicationContext)
+    val updateManager = UpdateManager(context.applicationContext)
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var pendingApk: File? = null
+
+    private val _state = MutableStateFlow(
+        DashboardState(
+            serverUrl = preferences.serverUrl,
+            currentVersion = BuildConfig.VERSION_NAME,
+        )
+    )
+    val state: StateFlow<DashboardState> = _state
+
+    /**
+     * Polling loop. Must be invoked under repeatOnLifecycle so the loop
+     * cancels (and battery polling stops) when the activity is not started.
+     */
+    suspend fun runLoop() {
+        while (currentCoroutineContext().isActive) {
+            val url = preferences.serverUrl
+            repository.fetchOnce(url)
+                .onSuccess { snap ->
+                    history.push(
+                        ts = snap.ts,
+                        cpu = snap.cpu.overall_pct ?: 0f,
+                        mem = snap.mem.used_pct ?: 0f,
+                        swap = snap.mem.swap_used_pct ?: 0f,
+                        rxBps = snap.net.rx_rate_bps ?: 0L,
+                        txBps = snap.net.tx_rate_bps ?: 0L,
+                        battery = snap.battery.capacity_pct?.toFloat() ?: 0f,
+                        temp = snap.thermal.max_c ?: snap.battery.temperature_c ?: 0f,
+                    )
+                    _state.update { st ->
+                        st.copy(
+                            snapshot = snap,
+                            connected = true,
+                            lastError = null,
+                            lastUpdated = System.currentTimeMillis(),
+                            sparks = (0 until Metric.COUNT).associateWith { m ->
+                                history.sparkline(m, SPARKLINE_POINTS)
+                            },
+                            stats = (0 until Metric.COUNT).associateWith { m ->
+                                history.stats(m)
+                            },
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _state.update { st ->
+                        st.copy(
+                            connected = false,
+                            lastError = e.message ?: "Gagal terhubung ke server",
+                        )
+                    }
+                }
+            delay(POLL_INTERVAL_MS)
+        }
+    }
+
+    fun applyUrl(url: String) {
+        val normalized = url.trim().ifEmpty { Preferences.DEFAULT_URL }
+        preferences.serverUrl = normalized
+        _state.update { it.copy(serverUrl = normalized) }
+    }
+
+    fun checkForUpdate() {
+        scope.launch {
+            _state.update {
+                it.copy(
+                    update = UpdateUi(
+                        state = "checking",
+                        message = "Memeriksa rilis terbaru...",
+                    )
+                )
+            }
+            updateManager.checkLatest(BuildConfig.VERSION_NAME)
+                .onSuccess { info ->
+                    _state.update { st ->
+                        st.copy(
+                            updateInfo = info,
+                            update = if (info == null) {
+                                UpdateUi(state = "idle", message = "Sudah versi terbaru")
+                            } else {
+                                UpdateUi(
+                                    state = "available",
+                                    message = "Tersedia versi ${info.tag} (${info.name})",
+                                )
+                            },
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _state.update { st ->
+                        st.copy(
+                            update = st.update.copy(
+                                state = "error",
+                                message = e.message ?: "Gagal memeriksa pembaruan",
+                            )
+                        )
+                    }
+                }
+        }
+    }
+
+    fun downloadUpdate() {
+        val info = _state.value.updateInfo ?: return
+        scope.launch {
+            _state.update {
+                it.copy(update = it.update.copy(state = "downloading", progress = 0f))
+            }
+            updateManager.download(info) { p ->
+                _state.update { st ->
+                    st.copy(update = st.update.copy(progress = p.fraction.coerceIn(0f, 1f)))
+                }
+            }.onSuccess { file ->
+                pendingApk = file
+                _state.update { st ->
+                    st.copy(
+                        update = st.update.copy(
+                            state = "ready",
+                            progress = 1f,
+                            message = "APK terverifikasi. Siap dipasang.",
+                        )
+                    )
+                }
+            }.onFailure { e ->
+                _state.update { st ->
+                    st.copy(
+                        update = st.update.copy(
+                            state = "error",
+                            message = e.message ?: "Unduhan gagal",
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun installPendingUpdate() {
+        pendingApk?.let { updateManager.installApk(it) }
+    }
+
+    override fun onCleared() {
+        scope.cancel()
+        history.clear()
+        super.onCleared()
+    }
+
+    companion object {
+        private const val POLL_INTERVAL_MS = 3_000L
+        private const val SPARKLINE_POINTS = 48
+    }
+}

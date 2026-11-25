@@ -1,0 +1,20 @@
+[package]
+name = "monitor-core"
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+name = "monitor_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+jni = "0.21"
+
+[profile.release]
+# Small, fast static math core for low-end devices.
+opt-level = "z"
+lto = true
+codegen-units = 1
+# unwind (not abort): a Rust panic must never silently kill the Android
+# process across the JNI boundary; let it surface as a Java exception.
+panic = "unwind"

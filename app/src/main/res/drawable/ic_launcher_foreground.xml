@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Layer 1: Solid Main Housing / Body -->
+    <path
+        android:fillColor="#1E1E1E"
+        android:strokeColor="#1E1E1E"
+        android:strokeWidth="1.2"
+        android:pathData="M54,26 A28,28 0 1,0 54,82 A28,28 0 1,0 54,26 Z" />
+
+    <!-- Layer 2: Functional Elements / Keycaps / Visual Lines -->
+    <path
+        android:fillColor="#ECEFF4"
+        android:strokeColor="#ECEFF4"
+        android:strokeWidth="1.0"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M51,20 h6 v8 h-6 z M51,80 h6 v8 h-6 z M20,51 h8 v6 h-8 z M80,51 h8 v6 h-8 z M30,30 l6,6 l-4,4 l-6,-6 z M74,74 l6,6 l-4,4 l-6,-6 z M74,34 l6,-6 l4,4 l-6,6 z M30,78 l6,-6 l4,4 l-6,6 z" />
+
+    <!-- Layer 3: Solid Accent Anchor -->
+    <path
+        android:fillColor="#4C8DFF"
+        android:strokeColor="#4C8DFF"
+        android:strokeWidth="1.0"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,42 A12,12 0 1,1 54,66 A12,12 0 1,1 54,42 Z" />
+</vector>

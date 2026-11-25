@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+captures/
+.cxx/
+
+# Signing
+*.keystore
+*.jks
+
+# Native artifacts are built in CI (cargo-ndk) — never commit .so files
+app/src/main/jniLibs/
+
+# Local tooling (skill scripts run from the skill install dir)
+scripts/
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db

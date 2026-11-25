@@ -16,8 +16,9 @@ captures/
 # Native artifacts are built in CI (cargo-ndk) — never commit .so files
 app/src/main/jniLibs/
 
-# Local tooling (skill scripts run from the skill install dir)
-scripts/
+# Local tooling (skill scripts run from the skill install dir) — root only,
+# .github/scripts/ is CI infrastructure and MUST be committed.
+/scripts/
 __pycache__/
 *.pyc
 

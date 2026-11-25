@@ -220,7 +220,17 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun installPendingUpdate() {
-        pendingApk?.let { updateManager.installApk(it) }
+        val file = pendingApk ?: run {
+            _state.update {
+                it.copy(update = it.update.copy(state = "error", message = "File APK belum siap dipasang"))
+            }
+            return
+        }
+        updateManager.installApk(file).onFailure { e ->
+            _state.update { st ->
+                st.copy(update = st.update.copy(state = "error", message = e.message ?: "Gagal membuka installer"))
+            }
+        }
     }
 
     override fun onCleared() {

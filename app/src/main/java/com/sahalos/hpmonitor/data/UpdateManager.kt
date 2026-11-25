@@ -182,32 +182,75 @@ class UpdateManager(private val context: Context) {
                 @Suppress("DEPRECATION")
                 pkg.versionCode.toLong()
             }
-            remoteVersion > BuildConfig.VERSION_CODE
+            remoteVersion >= BuildConfig.VERSION_CODE
         } catch (_: Exception) {
             false
         }
     }
 
-    fun installApk(apkFile: File) {
-        if (!apkFile.exists()) return
-        if (Build.VERSION.SDK_INT >= 26 &&
-            !context.packageManager.canRequestPackageInstalls()
-        ) {
-            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                data = Uri.parse("package:${context.packageName}")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    fun installApk(apkFile: File): Result<Unit> {
+        if (!apkFile.exists()) {
+            return Result.failure(IOException("File APK tidak ditemukan: ${apkFile.name}"))
+        }
+
+        // On Android 8.0+ (API 26) through Android 14 (API 34), check unknown app install permission
+        if (Build.VERSION.SDK_INT >= 26) {
+            try {
+                if (!context.packageManager.canRequestPackageInstalls()) {
+                    val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                    return Result.failure(
+                        SecurityException("Izin pasang aplikasi tidak dikenal diperlukan. Silakan aktifkan izin lalu coba lagi.")
+                    )
+                }
+            } catch (_: Exception) {
+                try {
+                    val fallback = Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(fallback)
+                } catch (_: Exception) {}
             }
+        }
+
+        return try {
+            val uri = FileProvider.getUriForFile(
+                context, "${context.packageName}.provider", apkFile
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+            }
+
+            // Explicitly grant URI read permission to all matched installer targets (Android 11-14 safe)
+            try {
+                val resolveList = if (Build.VERSION.SDK_INT >= 33) {
+                    context.packageManager.queryIntentActivities(
+                        intent,
+                        PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+                }
+                for (info in resolveList) {
+                    context.grantUriPermission(
+                        info.activityInfo.packageName,
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                }
+            } catch (_: Exception) {}
+
             context.startActivity(intent)
-            return
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-        val uri = FileProvider.getUriForFile(
-            context, "${context.packageName}.provider", apkFile
-        )
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/vnd.android.package-archive")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }
-        context.startActivity(intent)
     }
 
     /** Numeric hierarchical SemVer comparison (never string-lexicographic). */

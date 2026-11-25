@@ -1,11 +1,13 @@
 package com.sahalos.hpmonitor.ui.dashboard
 
 import android.app.Application
+import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sahalos.hpmonitor.BuildConfig
 import com.sahalos.hpmonitor.core.Metric
 import com.sahalos.hpmonitor.core.MetricsCoreBridge
+import com.sahalos.hpmonitor.data.DeviceTarget
 import com.sahalos.hpmonitor.data.MetricsRepository
 import com.sahalos.hpmonitor.data.MetricsSnapshot
 import com.sahalos.hpmonitor.data.Preferences
@@ -36,9 +38,11 @@ data class DashboardState(
     val connected: Boolean = false,
     val lastError: String? = null,
     val lastUpdated: Long = 0L,
+    val latencyMs: Long? = null,
     val sparks: Map<Int, FloatArray> = emptyMap(),
     val stats: Map<Int, FloatArray> = emptyMap(),
     val serverUrl: String = Preferences.DEFAULT_URL,
+    val savedDevices: List<DeviceTarget> = emptyList(),
     val update: UpdateUi = UpdateUi(state = "idle"),
     val updateInfo: UpdateManager.UpdateInfo? = null,
     val currentVersion: String = BuildConfig.VERSION_NAME,
@@ -61,6 +65,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _state = MutableStateFlow(
         DashboardState(
             serverUrl = preferences.serverUrl,
+            savedDevices = preferences.getSavedDevices(),
             currentVersion = BuildConfig.VERSION_NAME,
             compactMode = preferences.compactMode,
             hudDeskMode = preferences.hudDeskMode,
@@ -77,8 +82,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     suspend fun runLoop() {
         while (currentCoroutineContext().isActive) {
             val url = preferences.serverUrl
+            val t0 = SystemClock.elapsedRealtime()
             repository.fetchOnce(url)
                 .onSuccess { snap ->
+                    val latency = (SystemClock.elapsedRealtime() - t0).coerceAtLeast(1L)
                     history.push(
                         ts = snap.ts,
                         cpu = snap.cpu.overall_pct ?: 0f,
@@ -95,6 +102,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                             connected = true,
                             lastError = null,
                             lastUpdated = System.currentTimeMillis(),
+                            latencyMs = latency,
                             sparks = (0 until Metric.COUNT).associateWith { m ->
                                 history.sparkline(m, SPARKLINE_POINTS)
                             },
@@ -109,6 +117,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         st.copy(
                             connected = false,
                             lastError = e.message ?: "Gagal terhubung ke server",
+                            latencyMs = null,
                         )
                     }
                 }
@@ -119,7 +128,44 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     fun applyUrl(url: String) {
         val normalized = url.trim().ifEmpty { Preferences.DEFAULT_URL }
         preferences.serverUrl = normalized
-        _state.update { it.copy(serverUrl = normalized) }
+        _state.update {
+            it.copy(
+                serverUrl = normalized,
+                snapshot = null,
+                connected = false,
+                latencyMs = null,
+            )
+        }
+    }
+
+    fun switchDevice(device: DeviceTarget) {
+        applyUrl(device.url)
+    }
+
+    fun addDevice(name: String, url: String) {
+        preferences.addOrUpdateDevice(name, url)
+        _state.update {
+            it.copy(
+                savedDevices = preferences.getSavedDevices(),
+                serverUrl = url.trim(),
+                snapshot = null,
+                connected = false,
+                latencyMs = null,
+            )
+        }
+    }
+
+    fun removeDevice(url: String) {
+        preferences.removeDevice(url)
+        _state.update {
+            it.copy(savedDevices = preferences.getSavedDevices())
+        }
+    }
+
+    fun sendRemoteControl(action: String) {
+        scope.launch {
+            repository.sendControl(_state.value.serverUrl, action)
+        }
     }
 
     fun toggleCompactMode() {

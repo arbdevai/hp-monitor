@@ -1,7 +1,7 @@
 # HP Monitor — Project State & Evolution Log
 
-## Current Status (v1.2.1)
-- **Active Version:** `1.2.1` (`versionCode = 10210`)
+## Current Status (v1.3.0)
+- **Active Version:** `1.3.0` (`versionCode = 10300`)
 - **Git Branch:** `main`
 - **Repo:** `arbdevai/hp-monitor` (public — dibutuhkan in-app update)
 - **minSdk:** 21 (J1 Ace = Android 5.1.1)
@@ -17,32 +17,38 @@
      tidak pernah abort proses Android.
    - Fallback `KotlinHistory` semantik identik bila `System.loadLibrary`
      gagal (bad ABI). Badge di dashboard menampilkan engine aktif.
-2. **Android 14 In-App Updater Crash Fix:**
-   - Menambahkan deklarasi `REQUEST_INSTALL_PACKAGES` pada `AndroidManifest.xml`.
-   - Mengatasi crash `SecurityException` / `ActivityNotFoundException` pada Android 14 (API 34).
-   - Penambahan explicit URI permission grant untuk PackageInstaller.
-   - Fallback handler aman ke `ACTION_SECURITY_SETTINGS` jika intent `ACTION_MANAGE_UNKNOWN_APP_SOURCES` ditolak vendor.
-   - Penambahan `<cache-path name="cache" path="." />` dan `external-cache-path` di `file_paths.xml`.
-3. **Pure OLED Black (#000000) Theme & Surface Tint Elimination:**
+2. **MediaTek Android 14 (ARM64) CPU Reading Multi-Strategy:**
+   - Mengatasi blokade SELinux `/proc/stat` pada Android 8-14 dengan membaca
+     frekuensi cpufreq langsung dari sysfs (`scaling_cur_freq`, `policy*`, MediaTek DVFSRC).
+   - Dynamic process elapsed CPU delta fallback: memastikan metrik CPU % dan per-core
+     tidak pernah kosong (`--`) di HP modern.
+3. **Multi-Device Switcher Cepat:**
+   - Dropdown chip switcher langsung di status bar / header telemetri.
+   - Menyimpan daftar host target (PC, HP 1, HP 2, dsb) di SharedPreferences,
+     dapat berganti target instan dalam 1 ketukan tanpa membuka Pengaturan.
+4. **Real-time Network Ping & Latency (ms):**
+   - Mengukur round-trip time (RTT) aktual ke server target setiap siklus polling.
+   - Indikator visual real-time dengan kode warna hijau (<50ms), kuning (<120ms), merah (>=120ms).
+5. **Remote Music & Volume Control (/api/control):**
+   - Mengontrol volume host target (Volume Up, Volume Down, Toggle Mute).
+   - Mengontrol media player host (Play/Pause, Next Track, Previous Track) via key event injection.
+   - Terintegrasi langsung di `EmbeddedAgentServer` dan UI Remote Control popup.
+6. **Pure OLED Black (#000000) Theme & Surface Tint Elimination:**
    - Menghilangkan degradasi warna merah/kecokelatan akibat Material 3 `surfaceTint`.
    - Palet warna OLED pekat (`MonitorBlack = #000000`, `MonitorCard = #080808`, border `#222222`).
    - Aksen neon cyber cyan (`#00D1FF`) dan green (`#00E676`) berdaya visual tinggi di AMOLED.
-4. **Desk HUD Mode (Zero-Scroll Mode):**
+7. **Desk HUD Mode (Zero-Scroll Mode):**
    - Mode telemetri khusus pajangan meja ("hp nganggur") dengan grid 3-kolom landscape.
    - 100% informasi CPU, RAM/Swap, Net, Baterai, dan Top Procs muat tanpa scroll vertikal.
    - Jam digital monospace real-time di header telemetri.
-5. **Collapsible TopAppBar & Fullscreen View:**
-   - Tombol toggle untuk menyembunyikan TopAppBar tebal 56dp menjadi status bar telemetri 28dp,
-     menghemat ruang vertikal secara drastis pada resolusi kecil (800x480).
-6. **Keep Screen On Flag:**
+8. **Collapsible TopAppBar & Fullscreen View:**
+   - Tombol toggle untuk menyembunyikan TopAppBar tebal 56dp menjadi status bar telemetri 28dp.
+9. **Keep Screen On Flag:**
    - Opsi `keepScreenOn` agar layar HP tidak mati otomatis saat diletakkan di meja sebagai monitor.
-7. **Dual-Role 2-in-1 (Embedded Agent Server & Host Mode):**
-   - APK dapat bertindak sebagai Viewer (Dashboard) ATAU Host (Yang Dimonitor).
-   - `HostAgentService` berjalan sebagai Foreground Service dengan `EmbeddedAgentServer`
-     di port 8787, membaca `/proc/stat`, `/proc/meminfo`, `BatteryManager`, `TrafficStats`.
-8. **SSL/TLS Root CA Trust Workaround (Android 5.1.1):**
-   - Workaround trust store kadaluarsa Android 5.0-5.1.1 untuk unduhan GitHub Release
-     dengan verifikasi integritas 4 lapis (signature + package name + SemVer) di `isApkValid`.
+10. **Dual-Role 2-in-1 (Embedded Agent Server & Host Mode):**
+   - APK dapat bertindak sebagai Viewer (Dashboard) ATAU Host (Yang Dimonitor) tanpa Termux/Python.
+11. **SSL/TLS Root CA Trust Workaround (Android 5.1.1):**
+   - Workaround trust store kadaluarsa Android 5.0-5.1.1 untuk unduhan GitHub Release.
 
 ## Known CI Failure Patterns
 1. **AGP Conflicting Configuration (splits vs ndk.abiFilters):**

@@ -51,6 +51,25 @@ class MetricsRepository {
         }
     }
 
+    suspend fun sendControl(url: String, action: String): Result<Boolean> = withContext(Dispatchers.IO) {
+        runCatching {
+            val trimmed = url.trim()
+            val clean = trimmed.removeSuffix("/").removeSuffix("/metrics").removeSuffix("/")
+            val base = if (
+                clean.startsWith("http://") || clean.startsWith("https://")
+            ) clean else "http://$clean"
+            val conn = URL("$base/api/control?action=$action").openConnection() as HttpURLConnection
+            conn.connectTimeout = CONNECT_TIMEOUT_MS
+            conn.readTimeout = READ_TIMEOUT_MS
+            conn.requestMethod = "GET"
+            try {
+                conn.responseCode == 200
+            } finally {
+                conn.disconnect()
+            }
+        }
+    }
+
     companion object {
         private const val CONNECT_TIMEOUT_MS = 3_000
         private const val READ_TIMEOUT_MS = 4_000

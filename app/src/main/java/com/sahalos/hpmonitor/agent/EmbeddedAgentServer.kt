@@ -92,6 +92,49 @@ class EmbeddedAgentServer(
                 val snap = collector.collect()
                 val body = json.encodeToString(snap) + "\n"
                 sendResponse(writer, 200, "application/json", body)
+            } else if (path.startsWith("/api/control")) {
+                val action = if (path.contains("action=")) {
+                    path.substringAfter("action=").substringBefore("&")
+                } else ""
+                val audio = context.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+                when (action) {
+                    "vol_up" -> audio?.adjustStreamVolume(
+                        android.media.AudioManager.STREAM_MUSIC,
+                        android.media.AudioManager.ADJUST_RAISE,
+                        android.media.AudioManager.FLAG_SHOW_UI
+                    )
+                    "vol_down" -> audio?.adjustStreamVolume(
+                        android.media.AudioManager.STREAM_MUSIC,
+                        android.media.AudioManager.ADJUST_LOWER,
+                        android.media.AudioManager.FLAG_SHOW_UI
+                    )
+                    "vol_mute" -> {
+                        if (android.os.Build.VERSION.SDK_INT >= 23) {
+                            audio?.adjustStreamVolume(
+                                android.media.AudioManager.STREAM_MUSIC,
+                                android.media.AudioManager.ADJUST_TOGGLE_MUTE,
+                                android.media.AudioManager.FLAG_SHOW_UI
+                            )
+                        } else {
+                            @Suppress("DEPRECATION")
+                            audio?.setStreamMute(android.media.AudioManager.STREAM_MUSIC, true)
+                        }
+                    }
+                    "media_play_pause" -> {
+                        audio?.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
+                        audio?.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
+                    }
+                    "media_next" -> {
+                        audio?.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_NEXT))
+                        audio?.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_NEXT))
+                    }
+                    "media_prev" -> {
+                        audio?.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+                        audio?.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+                    }
+                }
+                val body = "{\"status\":\"ok\",\"action\":\"$action\"}\n"
+                sendResponse(writer, 200, "application/json", body)
             } else {
                 val body = "{\"error\":\"not found\"}\n"
                 sendResponse(writer, 404, "application/json", body)

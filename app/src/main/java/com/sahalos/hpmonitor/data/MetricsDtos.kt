@@ -57,6 +57,12 @@ data class ProcInfo(
 )
 
 @Serializable
+data class DeviceTarget(
+    val name: String,
+    val url: String,
+)
+
+@Serializable
 data class MetricsSnapshot(
     val ts: Long = 0,
     val hostname: String = "",

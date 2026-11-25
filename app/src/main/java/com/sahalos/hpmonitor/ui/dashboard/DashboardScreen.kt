@@ -1,6 +1,7 @@
 package com.sahalos.hpmonitor.ui.dashboard
 
 import android.content.res.Configuration
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,30 +21,53 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BatteryFull
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material.icons.filled.ViewCompact
+import androidx.compose.material.icons.filled.VolumeDown
+import androidx.compose.material.icons.filled.VolumeMute
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,8 +78,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sahalos.hpmonitor.core.Metric
+import com.sahalos.hpmonitor.data.DeviceTarget
 import com.sahalos.hpmonitor.data.MetricsSnapshot
 import com.sahalos.hpmonitor.ui.components.MetricCard
 import com.sahalos.hpmonitor.ui.components.SkeletonCard
@@ -85,10 +111,37 @@ fun DashboardScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val snapshot = state.snapshot
 
+    var showDeviceSwitcher by remember { mutableStateOf(false) }
+    var showRemoteControl by remember { mutableStateOf(false) }
+
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val isHudMode = state.hudDeskMode
     val isFullscreen = state.fullscreenMode || isHudMode
+
+    if (showDeviceSwitcher) {
+        DeviceSwitcherDialog(
+            state = state,
+            onSelect = { dev ->
+                vm.switchDevice(dev)
+                showDeviceSwitcher = false
+            },
+            onAdd = { name, url ->
+                vm.addDevice(name, url)
+                showDeviceSwitcher = false
+            },
+            onRemove = { url -> vm.removeDevice(url) },
+            onDismiss = { showDeviceSwitcher = false },
+        )
+    }
+
+    if (showRemoteControl) {
+        RemoteControlDialog(
+            serverUrl = state.serverUrl,
+            onSendAction = { act -> vm.sendRemoteControl(act) },
+            onDismiss = { showRemoteControl = false },
+        )
+    }
 
     if (isHudMode) {
         DeskHudView(
@@ -98,6 +151,8 @@ fun DashboardScreen(
             onToggleFullscreen = { vm.toggleFullscreenMode() },
             onOpenSettings = onOpenSettings,
             onOpenHost = onOpenHost,
+            onOpenSwitcher = { showDeviceSwitcher = true },
+            onOpenRemote = { showRemoteControl = true },
         )
         return
     }
@@ -116,25 +171,41 @@ fun DashboardScreen(
                     onToggleFullscreen = { vm.toggleFullscreenMode() },
                     onOpenHost = onOpenHost,
                     onOpenSettings = onOpenSettings,
+                    onOpenSwitcher = { showDeviceSwitcher = true },
+                    onOpenRemote = { showRemoteControl = true },
                 )
             } else {
                 TopAppBar(
                     title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { showDeviceSwitcher = true },
+                        ) {
                             Text(
                                 text = "HP Monitor",
                                 fontWeight = FontWeight.SemiBold,
-                                fontSize = if (compact) 16.sp else 18.sp,
+                                fontSize = if (compact) 15.sp else 17.sp,
                             )
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(6.dp))
                             StatusChip(
                                 text = if (state.connected) "ONLINE" else "OFFLINE",
                                 color = if (state.connected) StatusGood else StatusCrit,
                             )
+                            if (state.latencyMs != null) {
+                                Spacer(Modifier.width(6.dp))
+                                LatencyBadge(state.latencyMs)
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MonitorBlack),
                     actions = {
+                        IconButton(onClick = { showRemoteControl = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = "Remote Control",
+                                tint = MonitorAccent,
+                            )
+                        }
                         IconButton(onClick = { vm.toggleHudDeskMode() }) {
                             Icon(
                                 imageVector = Icons.Default.Speed,
@@ -213,24 +284,27 @@ fun DashboardScreen(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         Text(
                             "Server tidak terjangkau",
                             color = StatusCrit,
                             style = MaterialTheme.typography.labelMedium,
                         )
                         Text(
-                            state.lastError ?: "Periksa alamat server di Pengaturan",
+                            state.lastError ?: "Periksa alamat server atau aktifkan Host Agent",
                             color = TextSecondary,
                             style = MaterialTheme.typography.bodySmall,
                         )
+                    }
+                    TextButton(onClick = { showDeviceSwitcher = true }) {
+                        Text("Ganti Host", color = MonitorAccent, fontSize = 12.sp)
                     }
                 }
             }
 
             snapshot?.let { sn ->
                 if (!isFullscreen) {
-                    HeaderRow(sn, state.lastUpdated, compact)
+                    HeaderRow(sn, state.lastUpdated, state.latencyMs, compact)
                 }
 
                 if (isLandscape) {
@@ -278,7 +352,6 @@ fun DashboardScreen(
 
 /**
  * Dedicated Zero-Scroll Desk Monitor HUD View.
- * Fits 100% of telemetry in screen without any scrolling.
  */
 @Composable
 private fun DeskHudView(
@@ -288,6 +361,8 @@ private fun DeskHudView(
     onToggleFullscreen: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenHost: () -> Unit,
+    onOpenSwitcher: () -> Unit,
+    onOpenRemote: () -> Unit,
 ) {
     val snapshot = state.snapshot
 
@@ -303,6 +378,8 @@ private fun DeskHudView(
             onToggleFullscreen = onToggleFullscreen,
             onOpenHost = onOpenHost,
             onOpenSettings = onOpenSettings,
+            onOpenSwitcher = onOpenSwitcher,
+            onOpenRemote = onOpenRemote,
         )
 
         Spacer(Modifier.height(4.dp))
@@ -333,14 +410,12 @@ private fun DeskHudView(
         }
 
         if (isLandscape) {
-            // 3-Column Zero-Scroll Grid for Landscape
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                // Column 1: CPU & TOP PROCS
                 HudCpuPanel(
                     sn = snapshot,
                     spark = state.sparks[Metric.CPU] ?: FloatArray(0),
@@ -349,7 +424,6 @@ private fun DeskHudView(
                         .fillMaxHeight(),
                 )
 
-                // Column 2: MEMORY, SWAP & THERMAL
                 HudMemoryPanel(
                     sn = snapshot,
                     spark = state.sparks[Metric.MEM] ?: FloatArray(0),
@@ -358,7 +432,6 @@ private fun DeskHudView(
                         .fillMaxHeight(),
                 )
 
-                // Column 3: NETWORK & POWER
                 HudNetPowerPanel(
                     sn = snapshot,
                     sparks = state.sparks,
@@ -368,7 +441,6 @@ private fun DeskHudView(
                 )
             }
         } else {
-            // 3-Row Zero-Scroll Layout for Portrait
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -408,9 +480,15 @@ private fun TelemetryHeader(
     onToggleFullscreen: () -> Unit,
     onOpenHost: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenSwitcher: () -> Unit,
+    onOpenRemote: () -> Unit,
 ) {
     val sn = state.snapshot
     val now = if (state.lastUpdated > 0) state.lastUpdated else System.currentTimeMillis()
+
+    val activeDeviceName = state.savedDevices.firstOrNull {
+        it.url.equals(state.serverUrl, ignoreCase = true)
+    }?.name ?: sn?.hostname?.ifEmpty { "Target Host" } ?: "Target Host"
 
     Row(
         modifier = Modifier
@@ -419,38 +497,70 @@ private fun TelemetryHeader(
             .background(MonitorBlack),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Status indicator dot
         Box(
             modifier = Modifier
                 .size(7.dp)
                 .clip(CircleShape)
                 .background(if (state.connected) StatusGood else StatusCrit),
         )
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(5.dp))
 
-        // Digital clock in monospace
         Text(
             text = fmtClock(now),
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             color = MonitorAccent,
         )
 
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(6.dp))
 
-        // Host name & Uptime
-        Text(
-            text = (sn?.hostname?.ifEmpty { "Target" } ?: "Target")
-                .plus(sn?.uptime_s?.let { " • up ${fmtUptime(it)}" } ?: ""),
-            fontSize = 11.sp,
-            color = TextSecondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        // Multi-Device Switcher Chip
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(MonitorCard)
+                .clickable { onOpenSwitcher() }
+                .padding(horizontal = 5.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = activeDeviceName,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Ganti Device",
+                tint = TextSecondary,
+                modifier = Modifier.size(14.dp),
+            )
+        }
 
-        // Actions
+        if (state.latencyMs != null) {
+            Spacer(Modifier.width(6.dp))
+            LatencyBadge(state.latencyMs)
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        // Remote Control Action
+        IconButton(
+            onClick = onOpenRemote,
+            modifier = Modifier.size(26.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Tune,
+                contentDescription = "Remote Control",
+                tint = MonitorAccent,
+                modifier = Modifier.size(15.dp),
+            )
+        }
+
+        // HUD Mode toggle
         IconButton(
             onClick = onToggleHud,
             modifier = Modifier.size(26.dp),
@@ -459,10 +569,11 @@ private fun TelemetryHeader(
                 imageVector = Icons.Default.Speed,
                 contentDescription = "HUD Mode",
                 tint = if (state.hudDeskMode) MonitorAccent else TextSecondary,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(15.dp),
             )
         }
 
+        // Fullscreen toggle
         IconButton(
             onClick = onToggleFullscreen,
             modifier = Modifier.size(26.dp),
@@ -471,10 +582,11 @@ private fun TelemetryHeader(
                 imageVector = if (state.fullscreenMode) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
                 contentDescription = "Layar Penuh",
                 tint = if (state.fullscreenMode) MonitorAccent else TextSecondary,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(15.dp),
             )
         }
 
+        // Host Mode
         IconButton(
             onClick = onOpenHost,
             modifier = Modifier.size(26.dp),
@@ -483,10 +595,11 @@ private fun TelemetryHeader(
                 imageVector = Icons.Default.Dns,
                 contentDescription = "Host Agent",
                 tint = TextSecondary,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(15.dp),
             )
         }
 
+        // Settings
         IconButton(
             onClick = onOpenSettings,
             modifier = Modifier.size(26.dp),
@@ -495,8 +608,305 @@ private fun TelemetryHeader(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Pengaturan",
                 tint = TextSecondary,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(15.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun LatencyBadge(latencyMs: Long?) {
+    if (latencyMs == null) return
+    val color = when {
+        latencyMs < 50L -> StatusGood
+        latencyMs < 120L -> StatusWarn
+        else -> StatusCrit
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = Icons.Default.Bolt,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(11.dp),
+        )
+        Text(
+            text = "${latencyMs}ms",
+            fontFamily = FontFamily.Monospace,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = color,
+        )
+    }
+}
+
+/**
+ * Dialog for switching and adding target devices.
+ */
+@Composable
+private fun DeviceSwitcherDialog(
+    state: DashboardState,
+    onSelect: (DeviceTarget) -> Unit,
+    onAdd: (String, String) -> Unit,
+    onRemove: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var isAdding by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
+    var newUrl by remember { mutableStateOf("") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(10.dp),
+            colors = CardDefaults.cardColors(containerColor = MonitorCard),
+            border = BorderStroke(1.dp, MonitorBorder),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "MULTI-DEVICE SWITCHER",
+                        color = MonitorAccent,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                    )
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Tutup", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                    }
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                if (isAdding) {
+                    OutlinedTextField(
+                        value = newName,
+                        onValueChange = { newName = it },
+                        label = { Text("Nama Device (mis: HP MediaTek)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = newUrl,
+                        onValueChange = { newUrl = it },
+                        label = { Text("IP:Port (mis: http://192.168.1.15:8787)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = { isAdding = false }) {
+                            Text("Batal", color = TextSecondary)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                if (newUrl.isNotBlank()) {
+                                    onAdd(newName, newUrl)
+                                    isAdding = false
+                                }
+                            },
+                        ) {
+                            Text("Simpan & Hubungkan")
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        state.savedDevices.forEach { dev ->
+                            val isSelected = dev.url.equals(state.serverUrl, ignoreCase = true)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (isSelected) MonitorSurfaceVariant else Color.Transparent)
+                                    .clickable { onSelect(dev) }
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = StatusGood,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                }
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        text = dev.name,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) TextPrimary else TextSecondary,
+                                    )
+                                    Text(
+                                        text = dev.url,
+                                        fontSize = 11.sp,
+                                        color = TextMuted,
+                                        fontFamily = FontFamily.Monospace,
+                                    )
+                                }
+                                if (state.savedDevices.size > 1) {
+                                    IconButton(
+                                        onClick = { onRemove(dev.url) },
+                                        modifier = Modifier.size(24.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Hapus",
+                                            tint = TextMuted,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = { isAdding = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Tambah Device Host Baru")
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Remote control dialog for media volume and music playback.
+ */
+@Composable
+private fun RemoteControlDialog(
+    serverUrl: String,
+    onSendAction: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(10.dp),
+            colors = CardDefaults.cardColors(containerColor = MonitorCard),
+            border = BorderStroke(1.dp, MonitorBorder),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column {
+                        Text(
+                            text = "REMOTE CONTROL",
+                            color = MonitorAccent,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                        )
+                        Text(
+                            text = serverUrl,
+                            color = TextMuted,
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                    }
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Tutup", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                Text(
+                    text = "KONTROL VOLUME",
+                    fontSize = 11.sp,
+                    color = TextSecondary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = { onSendAction("vol_down") },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.VolumeDown, contentDescription = "Vol -", modifier = Modifier.size(18.dp))
+                    }
+                    OutlinedButton(
+                        onClick = { onSendAction("vol_mute") },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.VolumeMute, contentDescription = "Mute", tint = StatusCrit, modifier = Modifier.size(18.dp))
+                    }
+                    OutlinedButton(
+                        onClick = { onSendAction("vol_up") },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.VolumeUp, contentDescription = "Vol +", modifier = Modifier.size(18.dp))
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = "KONTROL MUSIK & MEDIA",
+                    fontSize = 11.sp,
+                    color = TextSecondary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = { onSendAction("media_prev") },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.SkipPrevious, contentDescription = "Prev", modifier = Modifier.size(18.dp))
+                    }
+                    Button(
+                        onClick = { onSendAction("media_play_pause") },
+                        modifier = Modifier.weight(1.2f),
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Play/Pause", modifier = Modifier.size(18.dp))
+                    }
+                    OutlinedButton(
+                        onClick = { onSendAction("media_next") },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.SkipNext, contentDescription = "Next", modifier = Modifier.size(18.dp))
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    text = "Perintah dikirim langsung ke audio daemon host via /api/control",
+                    color = TextMuted,
+                    fontSize = 9.sp,
+                )
+            }
         }
     }
 }
@@ -581,7 +991,6 @@ private fun HudCpuPanel(
 
         Spacer(Modifier.height(4.dp))
 
-        // Top 2 processes in monospace
         sn.procs.take(2).forEach { p ->
             Row(
                 modifier = Modifier
@@ -727,7 +1136,6 @@ private fun HudNetPowerPanel(
         compact = true,
         modifier = modifier,
     ) {
-        // Network rates
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -761,7 +1169,6 @@ private fun HudNetPowerPanel(
 
         Spacer(Modifier.height(4.dp))
 
-        // Battery row
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -809,7 +1216,12 @@ private fun HudNetPowerPanel(
 }
 
 @Composable
-private fun HeaderRow(sn: MetricsSnapshot, lastUpdated: Long, compact: Boolean = false) {
+private fun HeaderRow(
+    sn: MetricsSnapshot,
+    lastUpdated: Long,
+    latencyMs: Long?,
+    compact: Boolean = false,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -825,6 +1237,10 @@ private fun HeaderRow(sn: MetricsSnapshot, lastUpdated: Long, compact: Boolean =
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
             )
+        }
+        if (latencyMs != null) {
+            LatencyBadge(latencyMs)
+            Spacer(Modifier.width(8.dp))
         }
         if (lastUpdated > 0) {
             Text(

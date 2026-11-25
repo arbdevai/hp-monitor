@@ -34,7 +34,15 @@
    polling saat layar mati/app background.
 
 ## Known CI Failure Patterns
-(Belum ada — diisi saat pola kegagalan pertama muncul.)
+1. **AGP Conflicting Configuration (splits vs ndk.abiFilters):**
+   - Gejala: `Conflicting configuration : '...' in ndk abiFilters cannot be present when splits abi filters are set`.
+   - Solusi: Hapus `ndk.abiFilters` dari `defaultConfig` saat `splits.abi { isEnable = true }` digunakan.
+2. **Rust JNI Native Type Conversion:**
+   - Gejala: `mismatched types expected &[Sample], found &VecDeque<Sample>` dan `expected JObject, found JPrimitiveArray`.
+   - Solusi: Gunakan `g.data.make_contiguous()` untuk mereferensikan slice dari `VecDeque`, dan panggil `.into()` pada `JPrimitiveArray` saat mengembalikan `JObject`.
+3. **AndroidViewModel Constructor Contract:**
+   - Gejala: `AndroidViewModel(context: Context)` menyebabkan type mismatch dan kegagalan factory ViewModel default.
+   - Solusi: Selalu deklarasikan `(application: Application) : AndroidViewModel(application)`.
 
 ## Catatan Keputusan
 - Native dipilih manual JNI (bukan UniFFI): surface area lebih kecil,

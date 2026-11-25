@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sahalos.hpmonitor.core.Metric
 import com.sahalos.hpmonitor.data.MetricsSnapshot
 import com.sahalos.hpmonitor.ui.components.MetricCard
@@ -112,7 +113,7 @@ fun DashboardScreen(
     vm: DashboardViewModel,
     onOpenSettings: () -> Unit,
 ) {
-    val state by vm.state.collectAsState()
+    val state by vm.state.collectAsStateWithLifecycle()
     val snapshot = state.snapshot
 
     Scaffold(

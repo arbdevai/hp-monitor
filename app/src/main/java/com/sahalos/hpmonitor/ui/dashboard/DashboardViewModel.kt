@@ -1,6 +1,6 @@
 package com.sahalos.hpmonitor.ui.dashboard
 
-import android.content.Context
+import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sahalos.hpmonitor.BuildConfig
@@ -43,12 +43,12 @@ data class DashboardState(
     val currentVersion: String = BuildConfig.VERSION_NAME,
 )
 
-class DashboardViewModel(context: Context) : AndroidViewModel(context) {
+class DashboardViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MetricsRepository()
     private val history = MetricsCoreBridge.history
-    private val preferences = Preferences(context.applicationContext)
-    val updateManager = UpdateManager(context.applicationContext)
+    private val preferences = Preferences(application)
+    val updateManager = UpdateManager(application)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var pendingApk: File? = null

@@ -6,7 +6,7 @@
 //! crate exclusively. Floating-point results cross JNI as little-endian
 //! byte arrays (stable, version-proof ABI).
 
-use jni::objects::{JByteArray, JClass, JObject};
+use jni::objects::{JClass, JObject};
 use jni::sys::{jboolean, jfloat, jint, jlong};
 use jni::JNIEnv;
 use std::collections::VecDeque;
@@ -16,6 +16,7 @@ const CAPACITY_DEFAULT: usize = 360;
 
 #[derive(Clone, Copy)]
 struct Sample {
+    #[allow(dead_code)]
     ts: i64,
     cpu: f32,
     mem: f32,

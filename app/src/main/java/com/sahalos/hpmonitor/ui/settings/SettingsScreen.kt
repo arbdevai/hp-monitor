@@ -29,7 +29,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sahalos.hpmonitor.data.Preferences
 import com.sahalos.hpmonitor.ui.dashboard.DashboardViewModel
 import com.sahalos.hpmonitor.ui.theme.MonitorAccent
@@ -51,7 +51,7 @@ fun SettingsScreen(
     vm: DashboardViewModel,
     onBack: () -> Unit,
 ) {
-    val state by vm.state.collectAsState()
+    val state by vm.state.collectAsStateWithLifecycle()
     var url by remember(state.serverUrl) { mutableStateOf(state.serverUrl) }
 
     Scaffold(
@@ -140,7 +140,7 @@ fun SettingsScreen(
 
 @Composable
 private fun UpdateSection(vm: DashboardViewModel) {
-    val state by vm.state.collectAsState()
+    val state by vm.state.collectAsStateWithLifecycle()
     val ui = state.update
     val busy = ui.state == "checking" || ui.state == "downloading"
 

@@ -121,7 +121,7 @@ fn f32s_to_le_bytes(v: &[f32]) -> Vec<u8> {
     out
 }
 
-fn to_jbyte_array(env: &JNIEnv, bytes: &[u8]) -> JObject {
+fn to_jbyte_array<'a>(env: &JNIEnv<'a>, bytes: &[u8]) -> JObject<'a> {
     match env.byte_array_from_slice(bytes) {
         Ok(arr) => {
             let raw: JByteArray = arr;
@@ -145,13 +145,14 @@ pub extern "system" fn Java_com_sahalos_hpmonitor_core_NativeHistory_nativeInit(
         Ok(g) => g,
         Err(_) => return 0,
     };
-    g.capacity = if capacity > 0 {
+    let cap = if capacity > 0 {
         (capacity as usize).min(10_000)
     } else {
         CAPACITY_DEFAULT
     };
+    g.capacity = cap;
     g.data.clear();
-    g.data.reserve(g.capacity);
+    g.data.reserve(cap);
     1
 }
 
@@ -168,7 +169,7 @@ pub extern "system" fn Java_com_sahalos_hpmonitor_core_NativeHistory_nativePush(
     batt: jfloat,
     temp: jfloat,
 ) {
-    let g = match store().lock() {
+    let mut g = match store().lock() {
         Ok(g) => g,
         Err(_) => return,
     };
@@ -188,34 +189,34 @@ pub extern "system" fn Java_com_sahalos_hpmonitor_core_NativeHistory_nativePush(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sahalos_hpmonitor_core_NativeHistory_nativeSparkline(
-    env: JNIEnv,
-    _class: JClass,
+pub extern "system" fn Java_com_sahalos_hpmonitor_core_NativeHistory_nativeSparkline<'a>(
+    env: JNIEnv<'a>,
+    _class: JClass<'a>,
     metric: jint,
     points: jint,
-) -> JObject {
+) -> JObject<'a> {
     let buf = {
-        let g = match store().lock() {
+        let mut g = match store().lock() {
             Ok(g) => g,
             Err(_) => return JObject::null(),
         };
-        metric_sparkline(&g.data, metric, points)
+        metric_sparkline(g.data.make_contiguous(), metric, points)
     };
     to_jbyte_array(&env, &f32s_to_le_bytes(&buf))
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sahalos_hpmonitor_core_NativeHistory_nativeStats(
-    env: JNIEnv,
-    _class: JClass,
+pub extern "system" fn Java_com_sahalos_hpmonitor_core_NativeHistory_nativeStats<'a>(
+    env: JNIEnv<'a>,
+    _class: JClass<'a>,
     metric: jint,
-) -> JObject {
+) -> JObject<'a> {
     let buf = {
-        let g = match store().lock() {
+        let mut g = match store().lock() {
             Ok(g) => g,
             Err(_) => return JObject::null(),
         };
-        metric_stats(&g.data, metric)
+        metric_stats(g.data.make_contiguous(), metric)
     };
     to_jbyte_array(&env, &f32s_to_le_bytes(&buf))
 }
